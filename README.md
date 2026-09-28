@@ -2,7 +2,7 @@
 
 A responsive attendance management web app that helps students track attendance, simulate OD / medical leave, and ask an Attendance Advisor chatbot whether they can safely take leave, all against the **75% minimum** requirement.
 
-🔗 **Live demo:** https://YOUR-USERNAME.github.io/attendance-predictor/
+🔗 **Live demo:** https://dharanidaran-j.github.io/Attendance-predictor/
 
 ## ✨ Features
 - Dashboard with student profile, overall and subject-wise attendance
