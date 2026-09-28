@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AttendIQ – Student Attendance Predictor</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f3f6f9;--card:#fff;--ink:#12213a;--mut:#64748b;--line:#e2e8f0;--pri:#0f766e;--side:#0f2a43;--safe:#16a34a;--warn:#d97706;--crit:#dc2626;--sh:0 1px 2px rgba(15,42,67,.06),0 6px 18px rgba(15,42,67,.05)}
+[data-theme=dark]{--bg:#0b1522;--card:#132235;--ink:#e6edf6;--mut:#8ea3bb;--line:#22364d;--pri:#2dd4bf;--side:#08111c;--sh:none}
+*{box-sizing:border-box}
+body{margin:0;font-family:Manrope,system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex;min-height:100vh}
+.side{width:220px;background:var(--side);color:#cbd5e1;padding:20px 14px;position:sticky;top:0;height:100vh;flex-shrink:0}
+.brand{font-weight:800;font-size:20px;color:#fff;margin:0 8px 22px}
+.side button{display:block;width:100%;text-align:left;background:none;border:0;color:inherit;font:inherit;padding:11px 12px;border-radius:10px;cursor:pointer;margin-bottom:3px}
+.side button:hover{background:rgba(255,255,255,.08)}
+.side button.on{background:var(--pri);color:#fff}
+[data-theme=dark] .side button.on{color:#06251f}
+main{flex:1;min-width:0;padding:22px 26px 100px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.top h1{margin:0;font-size:24px}.top p{margin:3px 0 0;color:var(--mut);font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--sh);margin-bottom:18px}
+.card h3{margin:0 0 12px;font-size:16px}
+.grid{display:grid;gap:18px}.g4{grid-template-columns:repeat(4,1fr)}.g3{grid-template-columns:1fr 1.4fr 1.4fr}.g2{grid-template-columns:1fr 1fr}
+.kpi b{font-size:30px;display:block;margin-top:4px}.kpi span{color:var(--mut);font-size:13px}
+.pill{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:800;color:#fff}
+.safe{background:var(--safe)}.warn{background:var(--warn)}.crit{background:var(--crit)}
+.tc-safe{color:var(--safe)}.tc-warn{color:var(--warn)}.tc-crit{color:var(--crit)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--mut);font-size:12px}
+.wrap{overflow-x:auto}
+.bar{height:6px;background:var(--line);border-radius:9px;width:90px;margin-top:5px}.bar i{display:block;height:100%;border-radius:9px}
+input,select,button.b{font:inherit;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);width:100%}
+label{font-size:12px;color:var(--mut);font-weight:600;display:block;margin-bottom:4px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:12px}
+button.b{background:var(--pri);color:#fff;border:0;cursor:pointer;font-weight:800;width:auto;padding:9px 16px}
+[data-theme=dark] button.b{color:#06251f}
+button.b.ghost{background:none;border:1px solid var(--line);color:var(--ink)}
+button.mini{border:1px solid var(--line);background:none;color:var(--ink);border-radius:8px;padding:4px 9px;cursor:pointer;font-weight:800}
+.res{border-radius:12px;padding:14px;margin-top:8px;font-size:14px;line-height:1.6;border:1px solid var(--line)}
+.res.safe{background:rgba(22,163,74,.12);color:var(--ink);border-color:var(--safe)}
+.res.warn,.res.crit{color:var(--ink)}
+.res.warn{background:rgba(217,119,6,.13);border-color:var(--warn)}.res.crit{background:rgba(220,38,38,.12);border-color:var(--crit)}
+.cv{position:relative;height:250px}
+#toast{position:fixed;top:16px;right:16px;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;opacity:0;transform:translateY(-10px);transition:.25s;z-index:99;pointer-events:none}
+#toast.show{opacity:1;transform:none}
+#fab{position:fixed;right:22px;bottom:22px;background:var(--pri);color:#fff;border:0;border-radius:99px;padding:14px 20px;font:800 15px Manrope,sans-serif;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:50}
+[data-theme=dark] #fab{color:#06251f}
+#chat{position:fixed;right:22px;bottom:86px;width:380px;max-width:calc(100vw - 24px);height:540px;max-height:calc(100vh - 110px);background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;z-index:50;transform:translateY(20px) scale(.96);opacity:0;pointer-events:none;transition:.25s;transform-origin:bottom right}
+#chat.open{transform:none;opacity:1;pointer-events:auto}
+.ch{padding:13px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;font-weight:800}
+#msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.m{max-width:86%;padding:10px 13px;border-radius:14px;font-size:14px;line-height:1.55}
+.m.u{align-self:flex-end;background:var(--pri);color:#fff;border-bottom-right-radius:4px}
+[data-theme=dark] .m.u{color:#06251f}
+.m.a{align-self:flex-start;background:var(--bg);border:1px solid var(--line);border-bottom-left-radius:4px}
+.dots span{display:inline-block;width:7px;height:7px;background:var(--mut);border-radius:50%;margin:0 2px;animation:bl 1s infinite}
+.dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}
+@keyframes bl{0%,60%,100%{opacity:.3}30%{opacity:1}}
+.chips{padding:0 12px 8px;display:flex;gap:6px;flex-wrap:wrap}
+.chips button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:99px;padding:5px 11px;font:600 12px Manrope,sans-serif;cursor:pointer}
+.cin{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+@media(max-width:900px){body{flex-direction:column}.side{width:100%;height:auto;position:static;display:flex;overflow-x:auto;padding:10px;align-items:center;gap:4px}.brand{margin:0 10px 0 4px;white-space:nowrap}.side button{width:auto;white-space:nowrap;margin:0}.g4{grid-template-columns:1fr 1fr}.g3,.g2{grid-template-columns:1fr}main{padding:16px 14px 100px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<aside class="side"><div class="brand">🎓 AttendIQ</div><nav id="nav" style="display:contents"></nav></aside>
+<main>
+<div class="top">
+  <div><h1 id="hi"></h1><p id="who"></p></div>
+  <div style="display:flex;gap:12px;align-items:center"><div style="text-align:right"><span style="font-size:12px;color:var(--mut)">Overall attendance</span><br><b id="topPct" style="font-size:26px"></b></div><button class="mini" id="themeBtn" title="Toggle theme">🌓</button></div>
+</div>
+
+<section data-v="dash"><div class="grid g4" id="kpis" style="margin-bottom:18px"></div></section>
+
+<section data-v="dash ana"><div class="grid g3">
+  <div class="card"><h3>Overall attendance</h3><div class="cv"><canvas id="cDonut"></canvas></div></div>
+  <div class="card"><h3>Subject-wise attendance</h3><div class="cv"><canvas id="cBar"></canvas></div></div>
+  <div class="card"><h3>Attendance trend</h3><div class="cv"><canvas id="cLine"></canvas></div></div>
+</div></section>
+
+<section data-v="ana"><div class="card"><h3>Risk analysis</h3><div class="wrap"><table id="riskT"></table></div></div></section>
+
+<section data-v="dash att"><div class="card"><h3>Subject-wise attendance</h3><div class="wrap"><table id="tbl"></table></div></div></section>
+
+<section data-v="att"><div class="grid g2">
+  <div class="card"><h3>Edit attendance</h3>
+    <div class="row"><div><label>Subject</label><select id="eSub"></select></div><div><label>Classes conducted</label><input id="eC" type="number" min="0"></div><div><label>Classes attended</label><input id="eA" type="number" min="0"></div></div>
+    <button class="b" id="eSave">Save changes</button> <button class="b ghost" id="eDel">Remove subject</button></div>
+  <div class="card"><h3>Add subject</h3>
+    <div class="row"><div><label>Name</label><input id="nN"></div><div><label>Code</label><input id="nCode"></div><div><label>Conducted</label><input id="nC" type="number" min="0"></div><div><label>Attended</label><input id="nA" type="number" min="0"></div></div>
+    <button class="b" id="nAdd">Add subject</button></div>
+</div></section>
+
+<section data-v="dash od"><div class="card"><h3>OD / Medical Leave Simulator</h3>
+  <div class="row"><div><label>OD days</label><input id="sOd" type="number" min="0" value="0"></div><div><label>Medical leave days</label><input id="sMl" type="number" min="0" value="0"></div><div><label>Classes covered per day</label><input id="sCpd" type="number" min="1" max="12"></div></div>
+  <div id="simOut"></div></div></section>
+
+<section data-v="prof"><div class="card" style="max-width:560px"><h3>Student profile</h3>
+  <div class="row"><div><label>Name</label><input id="pN"></div><div><label>Register number</label><input id="pR"></div><div><label>Department</label><input id="pD"></div><div><label>Year</label><input id="pY"></div></div>
+  <button class="b" id="pSave">Save profile</button></div></section>
+
+<section data-v="set"><div class="card" style="max-width:560px"><h3>Attendance policy</h3>
+  <div class="row"><div><label>Minimum required %</label><input id="stMin" type="number" min="1" max="99"></div><div><label>OD counts as</label><select id="stOd"></select></div><div><label>Medical leave counts as</label><select id="stMl"></select></div></div>
+  <p style="font-size:13px;color:var(--mut)">Present = counted as attended. Excluded = removed from total classes. Absent = counted as a missed class.</p>
+  <button class="b" id="stSave">Save policy</button> <button class="b ghost" id="stReset">Reset sample data</button></div></section>
+</main>
+
+<div id="toast"></div>
+<button id="fab">🤖 Attendance Advisor</button>
+<div id="chat" aria-live="polite">
+  <div class="ch"><span>🤖 Attendance Advisor</span><span><button class="mini" id="clr">Clear</button> <button class="mini" id="cls">✕</button></span></div>
+  <div id="msgs"></div>
+  <div class="chips" id="chips"></div>
+  <div class="cin"><input id="cq" placeholder="Ask about your attendance…" autocomplete="off"><button class="b" id="send">Send</button></div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const KEY='attendiq_v1';
+const DEF={student:{name:'Aarav Sharma',reg:'22CS1045',dept:'Computer Science & Engineering',year:'3rd Year'},
+settings:{min:75,od:'present',ml:'exclude',cpd:6,theme:'light'},
+subjects:[{name:'Mathematics',code:'MA201',c:58,a:52},{name:'Physics',code:'PH101',c:55,a:47},{name:'Chemistry',code:'CH101',c:50,a:39},{name:'Data Structures',code:'CS201',c:48,a:44},{name:'English',code:'HS101',c:40,a:38},{name:'Electronics',code:'EC201',c:45,a:31}],
+history:[{l:'Wk 1',p:91},{l:'Wk 2',p:88},{l:'Wk 3',p:86},{l:'Wk 4',p:84},{l:'Wk 5',p:82},{l:'Wk 6',p:81},{l:'Wk 7',p:80}]};
+let S;
+try{const x=JSON.parse(localStorage.getItem(KEY));S=x&&x.subjects?x:structuredClone(DEF)}catch(e){S=structuredClone(DEF)}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+
+/* ===== single calculation engine (used by dashboard, simulator AND chatbot) ===== */
+const C={
+ pct:(a,c)=>c>0?a/c*100:0,
+ status:p=>p>=S.settings.min+5?'safe':p>=S.settings.min?'warn':'crit',
+ apply(a,c,n,pol){return pol==='present'?[a+n,c+n]:pol==='exclude'?[a,c]:[a,c+n]}, // n classes of leave, treated per policy
+ project(a,c,n,type){const pol=type==='od'?S.settings.od:type==='ml'?S.settings.ml:'absent';const[x,y]=C.apply(a,c,n,pol);return{a:x,c:y,p:C.pct(x,y)}},
+ canMiss:(a,c,r)=>Math.max(0,Math.floor(a*100/r-c+1e-9)),
+ need(a,c,t){if(c===0||a/c*100>=t)return 0;return t>=100?Infinity:Math.ceil((t*c-100*a)/(100-t)-1e-9)},
+ total(){return S.subjects.reduce((o,s)=>({a:o.a+s.a,c:o.c+s.c}),{a:0,c:0})}
+};
+const f1=n=>(Math.round(n*10)/10).toFixed(1);
+const col={safe:'#16a34a',warn:'#d97706',crit:'#dc2626'};
+const lbl={safe:'Safe',warn:'Warning',crit:'Critical'};
+const pill=p=>`<span class="pill ${C.status(p)}">${lbl[C.status(p)]}</span>`;
+const esc=s=>String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('show'),2400)}
+function pushHist(){const T=C.total();S.history.push({l:new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short'}),p:+f1(C.pct(T.a,T.c))});S.history=S.history.slice(-12)}
+function commit(){save();render()}
+
+/* ===== navigation ===== */
+const VIEWS=[['dash','Dashboard'],['att','Attendance'],['od','OD / Medical Leave'],['ana','Analytics'],['adv','Attendance Advisor'],['prof','Profile'],['set','Settings']];
+let view='dash';
+$('#nav').innerHTML=VIEWS.map(v=>`<button data-k="${v[0]}">${v[1]}</button>`).join('');
+$('#nav').onclick=e=>{const k=e.target.dataset.k;if(!k)return;if(k==='adv')return toggleChat(true);view=k;render()};
+
+/* ===== charts ===== */
+let ch={};
+function mk(id,cfg){if(ch[id])ch[id].destroy();ch[id]=new Chart($('#'+id),cfg)}
+function charts(){
+ const T=C.total(),st=getComputedStyle(document.documentElement);
+ Chart.defaults.color=st.getPropertyValue('--mut');Chart.defaults.font.family='Manrope,sans-serif';Chart.defaults.borderColor=st.getPropertyValue('--line');
+ const o={responsive:true,maintainAspectRatio:false};
+ mk('cDonut',{type:'doughnut',data:{labels:['Attended','Absent'],datasets:[{data:[T.a,T.c-T.a],backgroundColor:[col[C.status(C.pct(T.a,T.c))],'#94a3b8'],borderWidth:0}]},options:{...o,cutout:'68%',plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:x=>`${x.label}: ${x.raw} (${f1(x.raw/T.c*100)}%)`}}}}});
+ mk('cBar',{data:{labels:S.subjects.map(s=>s.code),datasets:[{type:'bar',label:'Attendance %',data:S.subjects.map(s=>+f1(C.pct(s.a,s.c))),backgroundColor:S.subjects.map(s=>col[C.status(C.pct(s.a,s.c))]),borderRadius:6},{type:'line',label:`Required ${S.settings.min}%`,data:S.subjects.map(()=>S.settings.min),borderColor:'#64748b',borderDash:[6,4],pointRadius:0}]},options:{...o,scales:{y:{min:0,max:100}},plugins:{legend:{position:'bottom'}}}});
+ mk('cLine',{type:'line',data:{labels:S.history.map(h=>h.l),datasets:[{label:'Overall %',data:S.history.map(h=>h.p),borderColor:'#0f766e',backgroundColor:'rgba(15,118,110,.15)',fill:true,tension:.35},{label:`Required ${S.settings.min}%`,data:S.history.map(()=>S.settings.min),borderColor:'#dc2626',borderDash:[6,4],pointRadius:0}]},options:{...o,scales:{y:{min:50,max:100}},plugins:{legend:{position:'bottom'}}}});
+}
+
+/* ===== render ===== */
+function render(){
+ document.documentElement.dataset.theme=S.settings.theme;
+ const T=C.total(),op=C.pct(T.a,T.c),R=S.settings.min;
+ $('#hi').textContent=`Welcome back, ${S.student.name.split(' ')[0]}`;
+ $('#who').textContent=`${S.student.reg} · ${S.student.dept} · ${S.student.year}`;
+ $('#topPct').innerHTML=`<span class="tc-${C.status(op)}">${f1(op)}%</span>`;
+ document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.k===view));
+ document.querySelectorAll('[data-v]').forEach(s=>s.hidden=!s.dataset.v.split(' ').includes(view));
+ const safe=S.subjects.filter(s=>C.status(C.pct(s.a,s.c))==='safe').length,risk=S.subjects.filter(s=>C.status(C.pct(s.a,s.c))!=='safe').length;
+ $('#kpis').innerHTML=[['Total subjects',S.subjects.length,''],['Overall attendance',f1(op)+'%',`${T.a}/${T.c} classes · ${pill(op)}`],['Safe subjects',safe,`≥ ${R+5}%`],['At-risk subjects',risk,`below ${R+5}%`]].map(k=>`<div class="card kpi" style="margin:0"><span>${k[0]}</span><b>${k[1]}</b><span>${k[2]}</span></div>`).join('');
+ const rows=S.subjects.map((s,i)=>{const p=C.pct(s.a,s.c);return{s,i,p}});
+ $('#tbl').innerHTML=`<tr><th>Subject</th><th>Attended / Total</th><th>Absent</th><th>Percentage</th><th>Status</th><th>Can miss</th><th>To reach ${R}%</th><th>To reach 80%</th><th>Mark today</th></tr>`+rows.map(({s,i,p})=>`<tr><td><b>${esc(s.name)}</b><br><small style="color:var(--mut)">${esc(s.code)}</small></td><td>${s.a} / ${s.c}</td><td>${s.c-s.a}</td><td><b class="tc-${C.status(p)}">${f1(p)}%</b><div class="bar"><i style="width:${Math.min(p,100)}%;background:${col[C.status(p)]}"></i></div></td><td>${pill(p)}</td><td>${C.canMiss(s.a,s.c,R)}</td><td>${C.need(s.a,s.c,R)}</td><td>${C.need(s.a,s.c,80)}</td><td><button class="mini" data-m="p" data-i="${i}">Present</button> <button class="mini" data-m="a" data-i="${i}">Absent</button></td></tr>`).join('');
+ $('#riskT').innerHTML=`<tr><th>Subject</th><th>%</th><th>Status</th><th>Max classes you can miss</th><th>Attend to reach ${R}%</th><th>Attend to reach 80%</th></tr>`+[...rows].sort((a,b)=>a.p-b.p).map(({s,p})=>`<tr><td>${esc(s.name)}</td><td>${f1(p)}%</td><td>${pill(p)}</td><td>${C.canMiss(s.a,s.c,R)}</td><td>${C.need(s.a,s.c,R)}</td><td>${C.need(s.a,s.c,80)}</td></tr>`).join('');
+ $('#eSub').innerHTML=S.subjects.map((s,i)=>`<option value="${i}">${esc(s.name)} (${esc(s.code)})</option>`).join('');
+ fillEdit();
+ $('#sCpd').value||($('#sCpd').value=S.settings.cpd);
+ sim();
+ Object.entries({pN:'name',pR:'reg',pD:'dept',pY:'year'}).forEach(([k,v])=>{if(document.activeElement.id!==k)$('#'+k).value=S.student[v]});
+ const po=`<option value="present">Present (attended)</option><option value="exclude">Excluded from total</option><option value="absent">Absent (missed)</option>`;
+ if(!$('#stOd').options.length){$('#stOd').innerHTML=po;$('#stMl').innerHTML=po}
+ $('#stMin').value=S.settings.min;$('#stOd').value=S.settings.od;$('#stMl').value=S.settings.ml;
+ if(!$('#eC').matches(':focus'))fillEdit();
+ charts();
+}
+function fillEdit(){const s=S.subjects[+$('#eSub').value||0];if(s){$('#eC').value=s.c;$('#eA').value=s.a}}
+$('#eSub').onchange=fillEdit;
+
+/* ===== simulator ===== */
+function sim(){
+ const T=C.total(),R=S.settings.min,cpd=Math.max(1,+$('#sCpd').value||S.settings.cpd);
+ const od=Math.max(0,+$('#sOd').value||0),ml=Math.max(0,+$('#sMl').value||0);
+ const [a1,c1]=C.apply(T.a,T.c,od*cpd,S.settings.od),[a2,c2]=C.apply(a1,c1,ml*cpd,S.settings.ml);
+ const cur=C.pct(T.a,T.c),pr=C.pct(a2,c2),ok=pr>=R,need=C.need(a2,c2,R);
+ const pn={present:'counted as present',exclude:'excluded from total',absent:'counted as absent'};
+ $('#simOut').innerHTML=`<div class="grid g4" style="margin-bottom:10px"><div><label>Current attendance</label><b>${f1(cur)}%</b></div><div><label>Attended / total</label><b>${T.a} / ${T.c}</b></div><div><label>Leave adjustment</label><b>${od*cpd+ml*cpd} classes</b></div><div><label>Predicted attendance</label><b class="tc-${C.status(pr)}">${f1(pr)}%</b></div></div>
+ <small style="color:var(--mut)">OD: ${od} day(s) × ${cpd} = ${od*cpd} classes, ${pn[S.settings.od]}. Medical: ${ml} day(s) × ${cpd} = ${ml*cpd} classes, ${pn[S.settings.ml]}. Result: ${a2}/${c2}. Change the policy in Settings.</small>
+ <div class="res ${ok?(C.status(pr)==='safe'?'safe':'warn'):'crit'}">${ok?(C.status(pr)==='safe'?'✅ Your attendance will remain safe.':`⚠️ Attendance stays above ${R}% but is close to the limit.`):`⚠️ Warning: Your attendance may fall below ${R}%. You need ${need} more attended classes to reach ${R}%.`}</div>`;
+}
+['sOd','sMl','sCpd'].forEach(id=>$('#'+id).oninput=sim);
+
+/* ===== forms ===== */
+const int=v=>/^\d+$/.test(String(v).trim())?+v:NaN;
+$('#tbl').onclick=e=>{const b=e.target.closest('button');if(!b)return;const s=S.subjects[+b.dataset.i];s.c++;if(b.dataset.m==='p')s.a++;pushHist();commit();toast(`${s.name}: marked ${b.dataset.m==='p'?'present':'absent'}`)};
+$('#eSave').onclick=()=>{const s=S.subjects[+$('#eSub').value],c=int($('#eC').value),a=int($('#eA').value);
+ if(!s)return toast('Add a subject first');if(isNaN(c)||isNaN(a))return toast('Enter whole numbers only');if(a>c)return toast('Attended cannot exceed conducted');
+ s.c=c;s.a=a;pushHist();commit();toast('Attendance updated')};
+$('#eDel').onclick=()=>{const s=S.subjects[+$('#eSub').value];if(!s)return;if(S.subjects.length<2)return toast('Keep at least one subject');if(confirm(`Remove ${s.name}?`)){S.subjects.splice(+$('#eSub').value,1);pushHist();commit();toast('Subject removed')}};
+$('#nAdd').onclick=()=>{const n=$('#nN').value.trim(),k=$('#nCode').value.trim().toUpperCase(),c=int($('#nC').value),a=int($('#nA').value);
+ if(!n||!k)return toast('Enter subject name and code');if(isNaN(c)||isNaN(a))return toast('Enter whole numbers for classes');if(a>c)return toast('Attended cannot exceed conducted');
+ if(S.subjects.some(s=>s.code===k))return toast('Subject code already exists');
+ S.subjects.push({name:n,code:k,c,a});['nN','nCode','nC','nA'].forEach(i=>$('#'+i).value='');pushHist();commit();toast('Subject added')};
+$('#pSave').onclick=()=>{const v=[pN,pR,pD,pY].map(i=>i.value.trim());if(v.some(x=>!x))return toast('Fill in every profile field');S.student={name:v[0],reg:v[1],dept:v[2],year:v[3]};commit();toast('Profile saved')};
+$('#stSave').onclick=()=>{const m=int($('#stMin').value);if(isNaN(m)||m<1||m>99)return toast('Minimum must be 1–99');S.settings.min=m;S.settings.od=$('#stOd').value;S.settings.ml=$('#stMl').value;S.settings.cpd=Math.max(1,+$('#sCpd').value||6);commit();toast('Policy saved')};
+$('#stReset').onclick=()=>{if(confirm('Reset all data to the sample?')){S=structuredClone(DEF);$('#sCpd').value=S.settings.cpd;commit();toast('Sample data restored')}};
+$('#themeBtn').onclick=()=>{S.settings.theme=S.settings.theme==='dark'?'light':'dark';commit()};
+
+/* ===== Attendance Advisor (rule-based NLU -> same calc engine) ===== */
+const W={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,a:1,an:1};
+function findSubj(t){
+ let best=null;
+ for(const s of S.subjects){const words=s.name.toLowerCase().split(/\s+/);
+  if(t.includes(s.code.toLowerCase())||t.includes(s.name.toLowerCase())||words.some(w=>w.length>2&&t.match(new RegExp('\\b'+w.slice(0,4))))||(words.length>1&&t.includes(words.map(w=>w[0]).join(''))))best=best||s}
+ return best}
+function findNum(t){
+ let m=t.match(/(\d+|one|two|three|four|five|six|seven|eight|nine|ten|a|an)[\s-]*(day|days|class|classes|period|periods|lecture|lectures|week|weeks)\b/);
+ if(m){let n=isNaN(m[1])?W[m[1]]:+m[1];const u=m[2];if(/week/.test(u))n*=5;return{n,unit:/class|period|lecture/.test(u)?'class':'day'}}
+ if(/tomorrow|today/.test(t))return{n:1,unit:'day'};
+ if(/\bweek\b/.test(t))return{n:5,unit:'day'};
+ return null}
+function reply(q){
+ const t=q.toLowerCase(),R=S.settings.min,T=C.total(),op=C.pct(T.a,T.c),sj=findSubj(t),num=findNum(t);
+ const type=/\bod\b|on.?duty/.test(t)?'od':/sick|medical|ill\b|fever|hospital|health/.test(t)?'ml':'absent';
+ const tg=(t.match(/(\d{2,3})\s*%/)||[])[1];
+ const tn={od:'OD',ml:'medical leave',absent:'absence'}[type];
+ const info=s=>`${s.name} attendance is ${f1(C.pct(s.a,s.c))}% (${s.a}/${s.c})`;
+ const sorted=[...S.subjects].sort((x,y)=>C.pct(x.a,x.c)-C.pct(y.a,y.c));
+ if(/lowest|worst|least|weakest/.test(t)){const s=sorted[0];return `Your lowest attendance is <b>${s.name}</b> at <b>${f1(C.pct(s.a,s.c))}%</b> (${s.a}/${s.c}). ${C.pct(s.a,s.c)<R?`It is below ${R}% — you need to attend the next <b>${C.need(s.a,s.c,R)}</b> classes in a row to reach ${R}%.`:`You can still miss ${C.canMiss(s.a,s.c,R)} more class(es) and stay above ${R}%.`}`}
+ if(/risk|danger|critical|shortage|warning|trouble/.test(t)&&!num){const r=sorted.filter(s=>C.status(C.pct(s.a,s.c))!=='safe');return r.length?`Subjects at risk:<br>`+r.map(s=>`• <b>${s.name}</b>: ${f1(C.pct(s.a,s.c))}% (${lbl[C.status(C.pct(s.a,s.c))]}) — ${C.pct(s.a,s.c)<R?`attend ${C.need(s.a,s.c,R)} more classes to reach ${R}%`:`only ${C.canMiss(s.a,s.c,R)} class(es) can be missed`}`).join('<br>'):`Great news — every subject is at ${R+5}% or above. You're safe everywhere.`}
+ if(tg||/reach|need to attend|improve|get to|boost/.test(t)){const g=+tg||R;
+  if(sj){const n=C.need(sj.a,sj.c,g);return n?`${info(sj)}. To reach ${g}% you must attend the next <b>${n}</b> class(es) consecutively (${sj.a+n}/${sj.c+n} = ${f1(C.pct(sj.a+n,sj.c+n))}%).`:`${info(sj)} — you're already above ${g}%.`}
+  const n=C.need(T.a,T.c,g);return (n?`Overall attendance is ${f1(op)}% (${T.a}/${T.c}). To reach ${g}% overall, attend the next <b>${n}</b> classes in a row.`:`Overall attendance is ${f1(op)}%, already above ${g}%.`)+`<br>By subject:<br>`+S.subjects.map(s=>`• ${s.name}: ${C.need(s.a,s.c,g)||'0 (already there)'}`).join('<br>')}
+ if(/how many.*(miss|skip|bunk|leave|absent|off)|can i (miss|skip)|maximum.*miss|bunk/.test(t)&&!/(day|class)/.test(t.replace(/how many (classes|days)/,''))||/how many.*(can|could).*(miss|skip)/.test(t)){
+  if(sj){const m=C.canMiss(sj.a,sj.c,R);return `${info(sj)}. ${sj.a/sj.c*100<R?`It is already below ${R}%, so you can't afford to miss any class. Attend ${C.need(sj.a,sj.c,R)} in a row to recover.`:`You can miss at most <b>${m}</b> more class(es) and stay at or above ${R}% (${sj.a}/${sj.c+m} = ${f1(C.pct(sj.a,sj.c+m))}%).`}`}
+  return `Maximum classes you can miss and stay ≥ ${R}%:<br>`+S.subjects.map(s=>`• ${s.name}: <b>${C.canMiss(s.a,s.c,R)}</b> (now ${f1(C.pct(s.a,s.c))}%)`).join('<br>')+`<br>Overall: <b>${C.canMiss(T.a,T.c,R)}</b> classes.`}
+ if(num||/leave|tomorrow|absent|miss|skip|\bod\b|sick|off\b/.test(t)){
+  const nn=num||{n:1,unit:'day'};
+  if(sj){const n=nn.unit==='class'?nn.n:nn.n;const r=C.project(sj.a,sj.c,n,type),cur=C.pct(sj.a,sj.c);
+   const how=type==='absent'?`If you miss ${n} additional class(es)`:`If you take ${n} class(es) of ${tn}, treated as ${{present:'present',exclude:'excluded from total',absent:'absent'}[type==='od'?S.settings.od:S.settings.ml]}`;
+   return `${info(sj)}. ${how}, it becomes <b>${f1(r.p)}%</b> (${r.a}/${r.c}), which is ${r.p>=R?`<b class="tc-safe">above</b> the required ${R}%.`:`<b class="tc-crit">below</b> the required ${R}%. You'd need ${C.need(r.a,r.c,R)} more attended classes to recover.`}${r.p>=R&&r.p<R+5?' ⚠️ That is close to the limit.':''}`}
+  const cls=nn.unit==='class'?nn.n:nn.n*S.settings.cpd,r=C.project(T.a,T.c,cls,type);
+  const hit=S.subjects.map(s=>({s,r:C.project(s.a,s.c,nn.unit==='class'?nn.n:nn.n,type)})).filter(x=>x.r.p<R&&C.pct(x.s.a,x.s.c)>=R),already=S.subjects.filter(s=>C.pct(s.a,s.c)<R);
+  return `Overall attendance is ${f1(op)}% (${T.a}/${T.c}). With ${nn.n} ${nn.unit}(s) of ${tn} (${cls} classes at ${S.settings.cpd}/day), it becomes <b>${f1(r.p)}%</b> (${r.a}/${r.c}) — ${r.p>=R?`<b class="tc-safe">above</b> ${R}%.`:`<b class="tc-crit">below</b> ${R}%.`}`+(hit.length?`<br>⚠️ Subjects that would drop below ${R}% (1 class each per day): `+hit.map(x=>`${x.s.name} → ${f1(x.r.p)}%`).join(', ')+'.':`<br>No currently safe subject would drop below ${R}%.`)+(already.length?`<br>Already below ${R}%: ${already.map(s=>s.name).join(', ')}.`:'')}
+ if(sj)return `${info(sj)}. Status: <b>${lbl[C.status(C.pct(sj.a,sj.c))]}</b>. You can miss ${C.canMiss(sj.a,sj.c,R)} more class(es); to reach 80% attend ${C.need(sj.a,sj.c,80)}.`;
+ return `Overall attendance: <b>${f1(op)}%</b> (${T.a}/${T.c}) — ${lbl[C.status(op)]}.<br>`+S.subjects.map(s=>`• ${s.name}: ${f1(C.pct(s.a,s.c))}% (${s.a}/${s.c})`).join('<br>')+`<br>Ask me about leave, OD, or how many classes you can miss.`}
+
+const chips=['Can I take leave tomorrow?','Which subject is at risk?','How many classes can I miss?','Calculate my attendance'];
+const msgs=$('#msgs');
+function add(cls,html,isText){const d=document.createElement('div');d.className='m '+cls;isText?d.textContent=html:d.innerHTML=html;msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;return d}
+function greet(){msgs.innerHTML='';add('a',`Hi ${esc(S.student.name.split(' ')[0])}! I'm your Attendance Advisor. I read your live dashboard data, so try a question like “Will 3 days sick leave drop my Chemistry below ${S.settings.min}%?”`)}
+function ask(q){q=q.trim();if(!q)return;add('u',q,true);$('#cq').value='';const d=add('a','<span class="dots"><span></span><span></span><span></span></span>');
+ setTimeout(()=>{try{d.innerHTML=reply(q)}catch(e){d.textContent='Sorry, I could not work that out. Try rephrasing.'}msgs.scrollTop=msgs.scrollHeight},550)}
+$('#chips').innerHTML=chips.map(c=>`<button>${c}</button>`).join('');
+$('#chips').onclick=e=>{if(e.target.tagName==='BUTTON')ask(e.target.textContent)};
+$('#send').onclick=()=>ask($('#cq').value);
+$('#cq').onkeydown=e=>{if(e.key==='Enter')ask($('#cq').value)};
+$('#clr').onclick=greet;$('#cls').onclick=()=>toggleChat(false);$('#fab').onclick=()=>toggleChat();
+function toggleChat(o){const c=$('#chat');c.classList.toggle('open',o);if(c.classList.contains('open'))$('#cq').focus()}
+
+greet();render();
+</script>
+</body>
+</html>
